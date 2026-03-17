@@ -13,7 +13,7 @@ This directory contains a Jupyter notebook and Python utilities for solving the 
 
 - Python 3.10–3.12
 - A deployed **Vehicle Route Optimizer** stack (OCI AI Accelerator Pack)
-- Network access to the deployed API endpoint (VCN, bastion, or VPN)
+- Network access to the deployed API endpoint 
 
 Install the required Python packages before running the notebook:
 
@@ -27,21 +27,6 @@ pip install requests numpy pandas scipy matplotlib
 2. Note the **API endpoint** from the stack Outputs after deployment (~30–45 min).
 3. Open `cvrptw.ipynb` and set `BASE_URL` to your API endpoint.
 4. Run all cells.
-
-## Helper Functions (`cvrptw-utils/utils.py`)
-
-| Function | Purpose |
-|---|---|
-| `solve` | Submit a payload and poll for a cuOpt solution in one call |
-| `solution_eval` | Compare cuOpt results against a best-known solution |
-| `plot_routes` | Visualise vehicle routes on a two-panel map |
-| `create_from_file` | Parse a Gehring & Homberger benchmark instance file |
-| `build_cost_matrix` | Compute a pairwise Euclidean distance matrix |
-| `build_fleet_data` | Build the `fleet_data` section of a cuOpt payload |
-| `build_task_data` | Build the `task_data` section of a cuOpt payload |
-| `build_payload` | Assemble a complete cuOpt payload |
-| `summarise_results` | Print a performance summary table across multiple time limits |
-| `plot_instance` | Visualise benchmark dataset: customer locations and time-window distribution |
 
 ## Benchmarks
 
