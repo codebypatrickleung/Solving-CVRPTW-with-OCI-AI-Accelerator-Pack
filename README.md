@@ -35,7 +35,7 @@ The notebook demonstrates CVRPTW solving on two standard **Gehring & Homberger**
 | Instance | Distribution | Best-known vehicles | Best-known cost |
 |---|---|---|---|
 | `C1_2_1` | Clustered | 20 | 2704.57 |
-| `R1_2_1` | Random | 20 | 4772.63 |
+| `R1_2_1` | Random | 20 | 4784.11 |
 
 Each instance is solved with both a 2-second and a 10-second solver time limit to illustrate the cost/quality trade-off.
 
