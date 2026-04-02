@@ -1,6 +1,6 @@
 # CVRPTW with OCI AI Accelerator Pack
 
-This directory contains a Jupyter notebook and Python utilities for solving the **Capacitated Vehicle Routing Problem with Time Windows (CVRPTW)** using the **Vehicle Route Optimizer** from the **OCI AI Accelerator Pack**, powered by **NVIDIA cuOpt** on Oracle Cloud Infrastructure (OCI).
+This directory contains a Jupyter notebook and Python utilities for solving the **Capacitated Vehicle Routing Problem with Time Windows (CVRPTW)** using the **Vehicle Route Optimizer** from **OCI AI Accelerator Pack**, powered by **NVIDIA cuOpt** on Oracle Cloud Infrastructure (OCI). Read the full blog post [here](./Faster-Vehicle-Routing-Solving-CVRPTW-with-OCI-AI-Accelerator-Pack.pdf)
 
 ## Contents
 
