@@ -1,5 +1,5 @@
 """
-CVRPTW utility functions for the cvrptw.ipynb notebook.
+CVRPTW utility functions for the intro.ipynb and gh200.ipynb notebooks.
 
 Functions
 ---------

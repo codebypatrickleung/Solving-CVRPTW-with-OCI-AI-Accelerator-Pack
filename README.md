@@ -6,12 +6,13 @@ This directory contains a Jupyter notebook and Python utilities for solving the 
 
 | File / Directory | Description |
 |---|---|
-| `cvrptw.ipynb` | Step-by-step notebook: data loading, payload building, API calls, and result visualisation |
-| `cvrptw-utils/utils.py` | Reusable helper functions imported by the notebook |
+| `1-introduction.ipynb` | Step-by-step notebook: data loading, payload building, API calls, and result visualisation |
+| `2-gh200-test.ipynb` | Benchmark notebook: tests all 60 Gehring & Homberger 200-customer instances, with per-instance visualisations and a final comparison table |
+| `helper/utils.py` | Reusable helper functions imported by the notebook |
 
 ## Prerequisites
 
-- Python 3.10–3.12
+- Python 3.14
 - A deployed **Vehicle Route Optimizer** stack (OCI AI Accelerator Pack)
 - Network access to the deployed API endpoint 
 
@@ -25,19 +26,14 @@ pip install requests numpy pandas scipy matplotlib
 
 1. **Deploy** the Vehicle Route Optimizer via **OCI Console → Analytics & AI → AI Accelerator Pack → Vehicle Route Optimizer**.
 2. Note the **API endpoint** from the stack Outputs after deployment (~30–45 min).
-3. Open `cvrptw.ipynb` and set `BASE_URL` to your API endpoint.
+3. Open notebook and set `BASE_URL` to your API endpoint.
 4. Run all cells.
 
-## Benchmarks
+## Acknowledgement
+I would like to thank Gehring and Homberger for the benchmark instances and [SINTEF for maintaining the VRPTW benchmark repository](https://www.sintef.no/projectweb/top/vrptw/homberger-benchmark), which served as the source for the instance definitions and best-known solutions used in this notebook.
 
-The notebook demonstrates CVRPTW solving on two standard **Gehring & Homberger** instances (200 customers each):
-
-| Instance | Distribution | Best-known vehicles | Best-known cost |
-|---|---|---|---|
-| `C1_2_1` | Clustered | 20 | 2704.57 |
-| `R1_2_1` | Random | 20 | 4784.11 |
-
-Each instance is solved with both a 2-second and a 10-second solver time limit to illustrate the cost/quality trade-off.
+- Gehring, H. and Homberger, J. (1999). "A Parallel Hybrid Evolutionary Metaheuristic for the Vehicle Routing Problem with Time Windows." Proceedings of the EURO-Gen99, pp. 80-89
+- Gehring, H. and Homberger, J. (2001). "A Parallel Two-phase Metaheuristic for Routing Problems with Time Windows." Asia-Pacific Journal of Operational Research, 18, 35-47
 
 ## Cleanup
 
