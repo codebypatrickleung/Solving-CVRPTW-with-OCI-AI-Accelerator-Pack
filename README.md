@@ -6,7 +6,7 @@ This directory contains a Jupyter notebook and Python utilities for solving the 
 
 | File / Directory | Description |
 |---|---|
-| [Introduction to cuOpt](./1-intro.ipynb) | Step-by-step notebook: data loading, payload building, API calls, and result visualisation |
+| [Introduction](./1-intro.ipynb) | Step-by-step notebook: data loading, payload building, API calls, and result visualisation |
 | [Gehring & Homberger 200-customer instances](./2-gh200-test.ipynb) | Benchmark notebook: tests all 60 Gehring & Homberger 200-customer instances |
 
 ## Prerequisites
