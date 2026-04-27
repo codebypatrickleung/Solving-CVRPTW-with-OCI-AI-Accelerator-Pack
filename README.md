@@ -4,11 +4,12 @@ This directory contains a Jupyter notebook and Python utilities for solving the 
 
 ## Contents
 
-| File / Directory | Description |
-|---|---|
-| [Introduction](./1-introduction.ipynb) | Step-by-step notebook: data loading, payload building, API calls, and result visualisation |
-| [Gehring & Homberger 200-customer instances](./2-gh200.ipynb) | Benchmark notebook: tests all 60 Gehring & Homberger 200-customer instances |
-| [Network Optimisation](./3-multi-depot.ipynb) | The number and placement of depots directly reduce routing cost and improve efficiency by shortening travel distances, balancing demand, and enabling more optimal vehicle utilisation. |
+| File / Directory                                              | Description                                                                                                                          |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| [Introduction](./1-introduction.ipynb)                        | Covers payload construction, API usage, and the trade-off between solution time and quality                                          |
+| [Gehring & Homberger 200-customer instances](./2-gh200.ipynb) | Showcases consistent, high-quality solutions across diverse instances using a single configuration without manual tuning             |
+| [Network Optimisation](./3-multi-depot.ipynb)                 | Demonstrates how depot number and placement reduce cost and improve efficiency through shorter routes and better demand distribution |
+
 ## Prerequisites
 
 - Python 3.14
