@@ -1,21 +1,29 @@
 """
-CVRPTW utility functions for the intro.ipynb and gh200.ipynb notebooks.
+CVRPTW utility functions for the intro.ipynb, gh200.ipynb, and
+multi-depot (3-multi-depot.ipynb) notebooks.
 
 Functions
 ---------
-solve               - Submit a payload and poll for a solution in one call.
-solution_eval       - Compare cuOpt solution against the best-known result.
-plot_routes         - Visualise vehicle routes on a two-panel map.
-create_from_file    - Parse a Gehring & Homberger benchmark file.
-build_cost_matrix   - Compute a pairwise Euclidean distance matrix.
-build_fleet_data    - Build the fleet_data section of a cuOpt payload.
-build_task_data     - Build the task_data section of a cuOpt payload.
-build_payload       - Build a complete cuOpt payload (no solver_config).
-summarise_results   - Display a summary table for multiple time-limit runs.
-plot_instance       - Visualise a benchmark dataset (locations + time-window distribution).
+solve                       - Submit a payload and poll for a solution in one call.
+solution_eval               - Compare cuOpt solution against the best-known result.
+plot_routes                 - Visualise vehicle routes on a two-panel map.
+plot_multi_depot_routes     - Visualise multi-depot routes with per-depot colouring.
+
+create_from_file            - Parse a Gehring & Homberger benchmark file.
+build_cost_matrix           - Compute a pairwise Euclidean distance matrix.
+build_cost_matrix_extended  - Compute a distance matrix for depots + customers.
+build_fleet_data            - Build the fleet_data section of a cuOpt payload.
+build_task_data             - Build the task_data section of a cuOpt payload.
+build_payload               - Build a complete cuOpt payload (no solver_config).
+build_multi_depot_payload   - Build a cuOpt payload with a custom vehicle_locations list.
+
+summarise_results           - Display a summary table for multiple time-limit runs.
+plot_instance               - Visualise a benchmark dataset (locations + time-window distribution).
 """
 
+import csv
 import logging
+import os
 import time
 
 import matplotlib.patches as mpatches
@@ -532,3 +540,212 @@ def build_payload(orders, n_locations, n_vehicles, vehicle_capacity):
         "task_data" : build_task_data(orders, n_locations),
     }
     return payload
+
+
+def build_cost_matrix_extended(orders_df):
+    """
+    Build a pairwise Euclidean distance matrix for all locations in orders_df
+    (depots + customers).
+
+    Args:
+        orders_df (pd.DataFrame): DataFrame with ``xcord`` and ``ycord`` columns
+            containing all locations (one or more depot rows followed by customer rows).
+
+    Returns:
+        np.ndarray: Square distance matrix of shape ``(len(orders_df), len(orders_df))``.
+    """
+    coords = list(zip(orders_df['xcord'], orders_df['ycord']))
+    return distance.cdist(coords, coords, metric='euclidean')
+
+
+def build_multi_depot_payload(orders_df, n_locations, vehicle_capacity,
+                              vehicle_locations):
+    """
+    Build a complete cuOpt payload with a custom ``vehicle_locations`` list.
+
+    The cost matrix is built from the full ``orders_df`` (including all depot rows),
+    while task data is extracted from ``orders_df.iloc[:n_locations + 1]``, which
+    assumes row 0 is the primary depot and rows 1 to ``n_locations`` are customers.
+    Any additional depot rows appended at the end of ``orders_df`` are included in
+    the cost matrix for vehicle routing but are not added to the task list.
+
+    Args:
+        orders_df (pd.DataFrame): DataFrame with all locations (depots + customers).
+            Row 0 must be the primary depot; rows 1 to ``n_locations`` must be
+            customers; any additional depot rows should be appended after row
+            ``n_locations``.
+        n_locations (int): Number of customer locations (excluding all depots).
+        vehicle_capacity (int | float): Capacity per vehicle.
+        vehicle_locations (list): List of ``[start_idx, end_idx]`` pairs, one per
+            vehicle.  The number of vehicles is derived from ``len(vehicle_locations)``.
+
+    Returns:
+        dict: cuOpt payload with ``cost_matrix_data``, ``fleet_data``, and
+            ``task_data`` keys populated.
+    """
+    n_vehicles  = len(vehicle_locations)
+    cost_matrix = build_cost_matrix_extended(orders_df)
+    task_data   = build_task_data(orders_df.iloc[:n_locations + 1], n_locations)
+
+    fleet_data = {
+        "vehicle_locations": vehicle_locations,
+        "capacities"       : [[vehicle_capacity] * n_vehicles],
+    }
+
+    payload = {
+        "cost_matrix_data": {
+            "data": {"0": cost_matrix.astype(np.float32).tolist()}
+        },
+        "fleet_data": fleet_data,
+        "task_data" : task_data,
+    }
+    return payload
+
+
+def plot_multi_depot_routes(solver_response, orders_df, vehicle_locs,
+                            title='cuOpt Solution Routes',
+                            max_routes=20, detail_routes=20):
+    """
+    Visualise routes from a multi-depot cuOpt solver response.
+
+    Left panel  — all routes on the full map.
+    Right panel — detailed arrow diagram for the first ``detail_routes`` vehicles.
+
+    Args:
+        solver_response (dict): The ``solver_response`` sub-dict from ``solve()``.
+        orders_df (pd.DataFrame): DataFrame including depot rows and customer rows;
+            must contain ``xcord`` and ``ycord`` columns.
+        vehicle_locs (list): List of ``[start_idx, end_idx]`` per vehicle, used to
+            identify which location indices are depots.
+        title (str): Figure suptitle.
+        max_routes (int): Maximum routes drawn on the overview panel.
+        detail_routes (int): Routes drawn in the detail panel.
+    """
+    if solver_response is None or solver_response.get('status') != 0:
+        print('No valid solution available to visualise.')
+        return
+
+    vehicle_data = solver_response.get('vehicle_data', {})
+    if not vehicle_data:
+        print('No vehicle_data found in solver_response.')
+        return
+
+    coords = orders_df[['xcord', 'ycord']].values
+    n_used = len(vehicle_data)
+
+    # Identify unique depot indices from vehicle_locations
+    all_depot_idxs = sorted(set(idx for sl in vehicle_locs for idx in sl))
+
+    # Generate generic depot labels (Depot A, B, C …) and markers dynamically
+    marker_seq    = ['*', 'D', '^', 'P', 'h']
+    depot_labels  = {idx: f'Depot {chr(65 + k)}' for k, idx in enumerate(all_depot_idxs)}
+    depot_markers = {idx: marker_seq[k % len(marker_seq)]
+                     for k, idx in enumerate(all_depot_idxs)}
+    depot_palette = ['red', 'darkorange', 'purple', 'green', 'brown']
+    depot_colors  = {idx: depot_palette[k % len(depot_palette)]
+                     for k, idx in enumerate(all_depot_idxs)}
+
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+
+    # --- Left: overview -------------------------------------------------------
+    ax = axes[0]
+    customer_mask = np.ones(len(coords), dtype=bool)
+    for idx in all_depot_idxs:
+        customer_mask[idx] = False
+    ax.scatter(
+        coords[customer_mask, 0], coords[customer_mask, 1],
+        s=10, c='lightgray', zorder=2, label='Customer'
+    )
+
+    vids    = list(vehicle_data.keys())[:max_routes]
+    cmap_ov = [plt.cm.tab20(i / max(len(vids), 1)) for i in range(len(vids))]
+
+    for idx, vid in enumerate(vids):
+        route = vehicle_data[vid].get('route', [])
+        if len(route) < 2:
+            continue
+        rc    = np.array([coords[loc] for loc in route])
+        color = cmap_ov[idx]
+        ax.plot(rc[:, 0], rc[:, 1], '-', color=color, linewidth=0.9, alpha=0.7)
+        ax.scatter(rc[1:-1, 0], rc[1:-1, 1], s=15, color=color, zorder=4)
+
+    for didx in all_depot_idxs:
+        ax.scatter(*coords[didx], s=250, c=depot_colors[didx],
+                   marker=depot_markers[didx], zorder=7,
+                   label=depot_labels[didx])
+
+    ax.set_title(
+        f'{title}\n'
+        f'(showing {len(vids)} of {n_used} routes | '
+        f'cost: {solver_response.get("solution_cost", "N/A"):.2f})',
+        fontsize=11
+    )
+    ax.set_xlabel('X Coordinate')
+    ax.set_ylabel('Y Coordinate')
+    ax.legend(loc='upper right', fontsize=8)
+
+    # --- Right: detailed arrow diagram ----------------------------------------
+    ax2 = axes[1]
+    ax2.scatter(
+        coords[customer_mask, 0], coords[customer_mask, 1],
+        s=10, c='lightgray', zorder=2
+    )
+
+    detail_vids = list(vehicle_data.keys())[:detail_routes]
+    palette     = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00']
+    leg_patches = []
+
+    for k, vid in enumerate(detail_vids):
+        route = vehicle_data[vid].get('route', [])
+        if len(route) < 2:
+            continue
+        rc      = np.array([coords[loc] for loc in route])
+        color   = palette[k % len(palette)]
+        n_stops = len(route) - 2
+
+        for j in range(len(rc) - 1):
+            ax2.annotate('', xy=rc[j + 1], xytext=rc[j],
+                         arrowprops=dict(arrowstyle='->',
+                                         color=color,
+                                         lw=1.5,
+                                         mutation_scale=12))
+        ax2.scatter(rc[1:-1, 0], rc[1:-1, 1], s=70, color=color, zorder=5)
+        for m, (x, y) in enumerate(rc[1:-1], 1):
+            ax2.annotate(str(m), (x, y), fontsize=7, ha='center',
+                         va='center', color='white',
+                         fontweight='bold', zorder=6)
+
+        # Mark start (▶) and end (■) of each route
+        ax2.scatter(*rc[0], s=120, marker='>', c=color, zorder=8)
+        ax2.scatter(*rc[-1], s=120, marker='s', c=color, zorder=8)
+
+        leg_patches.append(
+            mpatches.Patch(color=color,
+                           label=f'Vehicle {vid} ({n_stops} stops)')
+        )
+
+    # Depot markers on detail panel
+    for didx in all_depot_idxs:
+        label  = depot_labels[didx]
+        marker = depot_markers[didx]
+        color  = depot_colors[didx]
+        ax2.scatter(*coords[didx], s=80, c=color, marker=marker, zorder=9)
+        ax2.annotate(label, coords[didx], textcoords='offset points',
+                     xytext=(6, 4), fontsize=8, fontweight='bold', color=color)
+        leg_patches.append(
+            plt.Line2D([0], [0], marker=marker, color='w',
+                       markerfacecolor=color, markersize=10, label=label)
+        )
+
+    ax2.legend(handles=leg_patches, loc='upper right', fontsize=8)
+    ax2.set_title(
+        f'Detailed View — First {len(detail_vids)} Vehicle Routes\n'
+        f'(▶ = route start  |  ■ = route end  |  numbers = visit order)',
+        fontsize=11
+    )
+    ax2.set_xlabel('X Coordinate')
+    ax2.set_ylabel('Y Coordinate')
+
+    plt.tight_layout()
+    plt.show()
+

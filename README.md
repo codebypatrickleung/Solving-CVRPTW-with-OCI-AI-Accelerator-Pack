@@ -8,7 +8,7 @@ This directory contains a Jupyter notebook and Python utilities for solving the 
 |---|---|
 | [Introduction](./1-introduction.ipynb) | Step-by-step notebook: data loading, payload building, API calls, and result visualisation |
 | [Gehring & Homberger 200-customer instances](./2-gh200.ipynb) | Benchmark notebook: tests all 60 Gehring & Homberger 200-customer instances |
-
+| [Network Optimisation](./3-multi-depot.ipynb) | Network optmisation planning: demonstrates `vehicle_locations` field to set independent start/end depots per vehicle |
 ## Prerequisites
 
 - Python 3.14
